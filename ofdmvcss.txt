@@ -1,0 +1,42 @@
+The paper's case for CSS is mostly empirical and fairly thin. It shows OFDM doing badly at distance and with movement, then says CSS offers "a balance between robustness and transmission speed". Their own results also show that plain CSS does badly too. The gains come from the extra things they add on top of CSS.
+
+What the paper actually argues
+1. OFDM breaks down on long, moving transmissions (§2.2, §4.3).
+
+AquaApp's OFDM picks the subcarriers that are clear at the start, using a probe and a reply. A picture takes seconds to send, and if the phones move during that time, those subcarriers become bad partway through.
+Picking again costs about 3 seconds each time.
+In their measurements (Figs. 9–10), OFDM's bit error rate climbs past 5 m and with movement, reaching up to 40%.
+2. Adding training symbols can't rescue OFDM (§4.3).
+Their words: training symbols are standard in OFDM, but "equalization fails when the SNR is too low". Once the chosen subcarriers have faded, correcting with training symbols doesn't help. So they switch to CSS.
+
+3. CSS is a good middle ground (§4.3, §5.2).
+
+Each symbol is a chirp that sweeps the whole 1.5–3.5 kHz band.
+One setting (SF) trades speed against robustness. They use SF 5: 312 bps, with 16 ms symbols.
+CSS needs no feedback or subcarrier selection.
+That's essentially the whole argument. They don't include a separate experiment that isolates why CSS resists the underwater channel better. They cite prior LoRa and underwater-CSS papers instead.
+
+What their results actually show
+Plain CSS isn't enough. In Fig. 20 the "CSS" baseline is ordinary chirp modulation with 4 sync chirps. It also struggles:
+
+Condition	AquaScope	CSS baseline	OFDM
+10–15 m distance (IER)	Low	31%	46%
+Moving phones (IER)	≤8%	>50%	>50%
+The gains come from what they add to CSS (ablation, Fig. 24, measured as symbol error rate):
+
+Receiver version	Symbol error rate
+Correct once at the start ("one Equal.")	>50%
++ a training symbol every 3 data symbols	<20%
++ timing sync from each training symbol	~11%
++ smoothing and range limit on that timing (full AquaScope)	~9% (2 points fewer)
+So a more accurate summary of the paper is: "CSS is a workable base, and our training symbols plus smoothed, bounded timing correction are what make it reliable."
+
+Background the paper doesn't spell out
+These are standard reasons CSS is considered robust. They come from general LoRa/CSS knowledge, not this paper:
+
+Each symbol uses the whole band, so a fade or noise at a few frequencies damages only part of each symbol, not whole subcarriers.
+Decoding concentrates the signal's energy into one peak (the de-chirp step followed by an FFT), which helps pick it out from noise.
+No feedback needed, unlike adaptive OFDM.
+Weak points to keep in mind if you cite this
+Different speeds. The OFDM baseline and CSS don't run at the same data rate. AquaApp's rate adapts to conditions, which the paper also notes makes its timing vary more (Fig. 25). So the comparison isn't at equal speed.
+Not like-for-like. AquaScope gets the extra training symbols and sync, while the OFDM baseline is AquaApp's original protocol without equivalent improvements. The paper argues such improvements wouldn't help OFDM, but it doesn't test that directly.
